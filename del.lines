@@ -1,0 +1,46 @@
+#!/bin/sh
+# del.lines
+# The script can delete blank lines.
+
+# temporary variable
+HOLD=hold.$$
+
+usage()
+{
+echo "`basename $0`: please give the params"
+echo "eg: `basename $0` 1.file 2.file 3.file..."
+return 1
+}
+
+#=========== main ==========
+
+if [ "$#" -lt 1 ];then
+  usage
+  exit 1
+fi
+
+while [ $# -gt 0 ] 
+do
+  case $1 in
+  -help)
+    echo "Use this script to delete all blank lines from a text file(s)"
+    exit 0
+    ;;
+  -*)
+    echo "Error option,please use \"-help\" to give more"
+    ;;
+  *) FILE_NAME=$1
+    if [ ! -f "$1" ];then
+      echo "The file $1 is not exist."
+    else
+      sed '/^$/d' $FILE_NAME > $HOLD
+      mv $HOLD $FILE_NAME
+      if [ $? -ne 0 ];then
+        echo "moving file failed, exiting..."
+        exit 1
+      fi
+    fi
+    ;;
+  esac
+  shift
+done

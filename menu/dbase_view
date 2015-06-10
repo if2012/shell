@@ -1,0 +1,15 @@
+#!/bin/sh
+# dbase_view
+# view a record
+
+# ignore signals
+trap "" 2 3 15
+
+. func_lib
+
+# main
+SAVEDIFS=$IFS
+IFS=:
+get_rec
+IFS=$SAVEDIFS
+unset get_rec

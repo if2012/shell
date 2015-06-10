@@ -1,0 +1,47 @@
+#!/bin/sh
+# menu
+# set the date, user and hostname up
+MYDATE=`date +%d/%m/%Y`
+THIS_HOST=`hostname -s`
+USER=`whoami`
+# loop forever !
+while :
+do
+  # clear the screen
+  tput clear
+  # here documets starts here
+  echo "  
+  __________________________________________________________________
+  User: $USER            Host:$THIS_HOST            Date:$MYDATE
+  __________________________________________________________________
+                1: List files in current directory
+                2: Use the vim editor
+                3: See who is on the system
+                H: Help screen
+                Q: Exit Menu
+  __________________________________________________________________
+  "
+  
+
+  # here document finished
+  echo -e -n "\tYour Choice [1 2 3 H Q] >"
+  read CHOICE
+    case $CHOICE in
+    1) ls
+      ;;
+    2) vim
+      ;;
+    3) who
+      ;;
+    H|h)
+    # use a here document for the help screen  
+    echo "This is the help screen, nothing here yet to help you!"
+      ;;
+    Q|q)  exit 0
+      ;;
+    *) echo -e "\t\007unkonwn user response"
+      ;;
+    esac
+  echo -e -n "\tHit the return key to continue"
+  read DUMMY
+done

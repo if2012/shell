@@ -1,0 +1,8 @@
+#!/bin/sh
+# whileread
+echo "type <CTRL-D> to terminate"
+echo -n "enter your most liked filen :"
+while read FILM 
+do 
+  echo "yeah, great film the $FILM"
+done

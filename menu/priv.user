@@ -1,0 +1,10 @@
+# prov.user access file for apps menu
+# edit this at your own risk!!!!
+# format is USER AMEND/DELETE records
+# example root yes means yes root can amend or delete recs
+#    "    dave no  means no dave cannot amend or delete recs
+root yes
+dave no
+peter yes
+luoyf yes 
+matty no

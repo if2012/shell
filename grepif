@@ -1,0 +1,8 @@
+#!/bin/sh
+# grepif
+if grep 'Dave\>' subshell.sh > /dev/null 2>&1
+then
+  echo "Great Dave is in the file"
+else
+  echo "No Dave is not in the file"
+fi

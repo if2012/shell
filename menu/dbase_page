@@ -1,0 +1,16 @@
+#!/bin/sh
+# dbase_page
+# page all records
+
+# temp files
+HOLD1=HOLD1.$$
+DBFILE=DBFILE
+
+. func_lib
+
+# main
+SAVEDIFS=$IFS
+IFS=:
+page_all
+echo -e "\n\n"
+IFS=$SAVEDIFS

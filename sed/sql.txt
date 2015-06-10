@@ -1,0 +1,5 @@
+Database   Size(MB)   Date Created
+----------------------------------
+GOSOUTH    2244       12/11/97
+TRISUD     5632       8/9/99
+(2 rows affected)

@@ -1,0 +1,73 @@
+#!/bin/sh
+# dbase_change
+# amend a record
+
+# temp files
+DBFILE=DBFILE
+HOLD1=HOLD1.$$
+HOLD2=HOLD2.$$
+
+. func_lib
+
+# main
+SAVEDIFS=$IFS
+IFS=:
+get_rec
+if [ "$MATCH" = "yes" ];then
+  if continue_promptYN "Is this the record you wish to amend" "Y"
+  then
+    echo "amending..."
+    # cannot change employee code
+    echo -n -e "EMPLOYEE NO: $CODE\n"
+
+    echo -n "FIRST NAME : [$F_NAME] >"
+    read _F_NAME
+    : ${_F_NAME:=$F_NAME}
+  
+    echo -n "SURNAME    : [$S_NAME] >"
+    read _S_NAME
+    : ${_S_NAME:=$S_NAME}
+
+    echo -n "DEPARTMENT : [$DEPART] >"
+    read _DEPART
+    : ${_DEPART:=$DEPART}
+  
+    grep -v $CODE $DBFILE >$HOLD1
+    if [ $? -ne 0 ];then
+      echo "Problems creating temprary file...check it out"
+      exit 1
+    fi
+    if continue_promptYN "Ready to save this record" "Y";then
+      echo "$CODE:$_F_NAME:$_S_NAME:$_DEPART"  >> $HOLD1
+      mv $HOLD1 $DBFILE
+      if [ $? -ne 0 ];then
+        echo "Problems moving temprary file...check it out"
+      fi
+      if [ -f $HOLD1 ];then
+        rm $HOLD1
+      fi
+      echo " Record Amended"
+      # now sort the file after changes,
+      # could have been done in one file movement of course
+      sort -k 3 -t: $DBFILE >$HOLD2 2> /dev/null
+      if [ $? -ne 0 ];then
+        echo "Problems trying to sort the file...check it out"
+        exit 1
+      fi
+      mv $HOLD2 $DBFILE
+      if [ $? -ne 0 ];then
+        echo "Problems moving temprary file...check it out"
+        exit 1
+      fi
+      if [ -f $HOLD2 ];then
+        rm $HOLD2
+      fi
+    else  # if amend aborted
+      echo "Amend aborted"
+      exit 0
+    fi
+  else  # if no mend
+    echo "no amending"
+    # no deletion
+  fi  # if wish to delete
+fi  # if match

@@ -1,0 +1,36 @@
+#!/bin/bash
+#we have less than 3 arguments.Print the help text:
+
+printf "`basename $0`  --renames a number of files using sed regular expressions\n"
+
+if [ $# -lt 3 ];then
+
+`echo   
+"
+ren -- renames a number of files using sed regular expressions 
+USAGE:ren 'regexp' 'repacement' files... 
+EXAMPLE:rename all*.HTM files in *.html: 
+  ren 'HTM$' 'html' *.HTM 
+	HELP"` 
+  exit 0
+
+fi
+
+OLD="$1"
+NEW="$2"
+#The shift command removes one argument from the list of
+#command line arguments.
+shift
+shift
+#$* contains now all the files:
+for file in $*;do
+  if [ -f "$file" ];then 
+    newfile=`echo "$file" | sed "s/${OLD}/${NEW}/g"`
+    if [ -f "$newfile" ];then
+      echo "ERROR:$newfile exists already"
+    else
+      printf "\trenaming $file to $newfile ...\n"
+      mv "$file" "$newfile"
+    fi
+  fi
+done

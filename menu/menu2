@@ -1,0 +1,198 @@
+#!/bin/sh
+# menu2
+# MAIN MENU SCRIPT
+# ignore CTRL-C and QUIT interrupts
+trap "" 2 3 15
+MYDATE=`date +%d/%m/%Y` 
+THIS_HOST=`hostname -s`
+
+USER=`whoami`
+
+# user level file
+USER_LEVELS=priv.user
+
+# hold file
+HOLD1=hold1.$$
+
+# colour function
+colour()
+{
+# format is background;foregroundm
+case $1 in
+black_green)
+  echo -e "\033[40;32m"
+  ;;
+black_yellow)
+  echo -e "\033[40;33m"
+  ;;
+black_white)
+  echo -e "\033[40;37m"
+  ;;
+black_cyan)
+  echo -e "\033[40;36m"
+  ;;
+red_yellow)
+  echo -e "\033[41;33m"
+  ;;
+esac
+}
+
+# just read a single key please 
+get_char()
+{
+# get_char
+#save current stty settings
+SAVEDSTTY=`stty -g`
+  stty cbreak
+  dd if=/dev/tty bs=1 count=1 2> /dev/null
+  stty -cbreak
+# restore stty
+stty $SAVEDSTTY
+}
+
+# turn the cursor on or off
+cursor()
+{
+# cursor
+# turn cursor on/off
+
+_OPT=$1
+  case $_OPT in
+  on) echo -e "\033[?25h"
+    ;;
+  off) echo -e "\033[?25l"
+    ;;
+  esac
+}
+
+# check what privilege level the user has
+restrict()
+{
+colour red_yellow
+echo -e -n "\n\n\007Sorry you are not authorised to use this function"
+colour black_green
+}
+
+user_level()
+{
+# user_level
+# read in the priv.user file
+while read LINE
+do
+  case $LINE in
+  # ignore comments
+  \#*);;
+  *) echo $LINE >>$HOLD1
+    ;;
+  esac
+done < $USER_LEVELS
+
+FOUND=false
+while read MENU_USER PRIV
+do
+  if [ "$MENU_USER" = "$USER" ]
+  then
+    FOUND=true
+    case $PRIV in
+    yes|YES)
+      return 0
+      ;;
+    no|NO)
+      return 1
+      ;;
+    esac
+  else
+  # no match found read next record
+    continue
+  fi
+done <$HOLD1
+if [ "$FOUND" = "false" ];then
+  echo "Sorry $USER you have not been authorised to use this menu"
+  exit 1
+fi
+}
+
+# called when user selects quit
+my_exit()
+{
+# my_exit
+# called when user selects quit!
+colour black_white
+  cursor on
+  rm *.$$
+  if [ -f $HOLD1 ];then
+    rm hold1.*
+  fi
+  exit 0
+}
+tput init
+# display their user levels on the screen
+if user_level;then
+  ACCESS="Access Mode is High"
+else
+  ACCESS="Access Mode is Normal"
+fi
+
+tput init
+while :
+do
+tput clear
+colour black_green
+echo "
+$ACCESS
+_____________________________________________________________________________
+User: $USER        Host:$THIS_HOST                       Date:$MYDATE
+_____________________________________________________________________________
+                1 : ADD A RECORD
+                2 : VIEW A RECORD
+                3 : PAGE ALL RECORDS
+                4 : CHANGE A RECORD
+                5 : DELETE A RECORD
+                P : PRINT ALL RECORDS
+                H : Help screen
+                Q : Exit Menu
+_____________________________________________________________________________"
+colour black_cyan
+echo -e -n "\tYour Choice [1,2,3,4,5,P,H,Q] >"
+read CHOICE
+#CHOICE=`get_char`
+  case $CHOICE in
+  1) if user_level; then
+      . dbase_add
+    else
+      restrict
+    fi
+    ;;
+  2) . dbase_view
+    ;;
+  3) . dbase_page 
+    ;;
+  4) if user_level; then
+      . dbase_change
+    else
+      restrict
+    fi
+    ;;
+  5) if user_level; then
+      sort /etc/passwd >/dev/null 2>&1
+      . dbase_del
+    else
+      restrict
+    fi
+    ;;
+  P|p) . dbase_print 
+    ;;
+  H|h)
+  tput clear
+  echo "
+  This is the help screen, nothing here yet to help you!"
+    ;;
+  Q|q) my_exit
+    ;;
+  *) echo -e "\t\007unknow user response" 
+    ;;
+  esac
+echo -e -n "\tHit the return key to continue"
+read DUMMY
+done
+

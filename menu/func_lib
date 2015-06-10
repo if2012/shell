@@ -1,0 +1,298 @@
+#!/bin/sh
+# func_lib
+# function_library
+# ignore signals
+trap "" 2 3 15
+
+read_a_char()
+{
+# read_a_char
+# save the settings
+SAVEDSTTY=`stty -g`
+  stty cbreak
+  dd if=/dev/tty bs=1 count=1 2> /dev/null
+  stty -cbreak
+stty $SAVEDSTTY
+}
+ 
+continue_promptYN()
+#to call: continue_prompt "string to display" default_answer
+{
+# continue_prompt
+_STR=$1
+_DEFAULT=$2
+# check we have the right params
+if [ $# -lt 1 ];then
+  echo "continue_prompt: I need a string to display"
+  return 1
+fi
+while :
+do
+  echo -n "$_STR [Y..N] [$_DEFAULT]:"
+  read _ANS
+  # if user hits return set the default and determine the return value
+  : ${_ANS:=$_DEFAULT}
+  if [ "$_ANS" = "" ]; then
+    case $_ANS in
+    Y) return 0 ;;
+    N) return 1 ;;
+    esac
+  fi
+  # user has selected something
+  case $_ANS in
+  y|Y|Yes|YES)
+    return 0
+    ;;
+  n|N|No|NO)
+    return 1
+    ;;
+  *) echo "Answer either Y or N, default is $_DEFAULT"
+    ;;
+  esac
+  echo $_ANS
+done
+}
+
+continue_prompt()
+{
+# continue_prompt
+echo -n "Hit any key to continue.."
+DUMMY=`read_a_char`
+}
+
+length_check()
+{
+# length_check
+# $1=str to  check length $2=max length
+_STR=$1
+_MAX=$2
+_LENGTH=`echo $_STR | awk '{print length($0)}'`
+if [ "$_LENGTH" -gt "$_MAX" ];then
+  return 1
+else 
+  return 0
+fi
+}
+
+a_number()
+{
+# a_number
+# call:a_number $1=number
+_NUM=$1
+_NUM=`echo $1 | awk '{if($0~/[^0-9]/) print "1"}'`
+if [ "$_NUM" != "" ]
+then 
+  # errors
+  return 1
+else
+  return 0
+fi
+}
+
+characters()
+# characters
+# to call: char_name string
+{
+_LERRERS_ONLY=$1
+_LETTERS_ONLY=`echo $1 | awk '{if($0~/[^a-zA-Z]/) print "1"}'`
+if [ "$_LETTERS_ONLY" != "" ]
+then
+  # oops errors
+  return 1
+else
+  # contains only chars
+  return 0
+fi
+}
+
+check_duplicate()
+{
+# check_duplicate
+# check for emploee number duplicate
+# to call: check_duplicate string
+_CODE=$1
+MATCH=`grep "$_CODE\>" $DBFILE`
+echo $_CODE
+if [ "$MATCH" = "" ];then
+  return 0  # no duplicate
+else
+  return 1  # duplicate found
+fi
+} 
+
+add_rec()
+{
+# add_rec
+# == STAFF NUMBER
+while :
+do
+  echo -n "Employee Staff Number :"
+  read NUM
+  if [ "$NUM" != "" ];then
+    if a_number $NUM; then
+      NUM_PASS=0
+    else
+      NUM_PASS=1
+    fi
+    if length_check $NUM 10; then
+      LEN_PASS=0
+    else
+      LEN_PASS=1
+    fi
+  # now check for duplicate...
+  if check_duplicate $NUM; then
+    DUPLICATE=0
+  else
+    DUPLICATE=1
+    echo "Staff Number: There is already a employee with this number"
+    continue_prompt
+  fi
+  if [ "$LEN_PASS" = "0" -a "$NUM_PASS" = "0" -a "$DUPLICATE" = "0" ]
+  then
+    break
+  elif [ "$DUPLICATE" = "0" ]
+  then
+      echo "Staff Number: Non-Number or Too Many Numbers In Field"
+      continue_prompt
+  fi
+  else
+    echo "Staff Number: No Input Detected, This Field Requires a Number"
+  fi
+done
+
+# == First Name
+while :
+do
+  echo -n "Employee's First Name :"
+  read F_NAME
+  if [ "$F_NAME" != "" ];then
+    if characters $F_NAME;then
+      F_NAME_PASS=0
+    else
+      F_NAME_PASS=1
+    fi
+    if length_check $F_NAME 20; then
+      LEN_PASS=0
+    else
+      LEN_PASS=1
+    fi
+    # both conditons must be true to get out f this loop
+    if [ "$LEN_PASS" = "0" -a "$F_NAME_PASS" = "0" ];then
+      break
+    else
+      echo "Staff First Name: Non-Character or Too Many Characters In Filed"
+      continue_prompt
+    fi
+  else 
+    echo "Staff First Name: No Input Detected, This Field Requires Charaters"
+    continue_prompt
+  fi
+done
+
+# == Surname
+while :
+do
+  echo -n "Employee's Surname :"
+  read S_NAME
+  if [ "$S_NAME" != "" ];then
+    if characters $S_NAME;then
+      S_NAME_PASS=0
+    else
+      S_NAME_PASS=1
+    fi
+    if length_check $S_NAME 20;then
+      LEN_PASS=0
+    else
+      LEN_PASS=1
+    fi
+    if [ "$LEN_PASS" = "0" -a "$S_NAME_PASS" = "0" ];then
+      break
+    else
+      echo "Staff Surname: Non-Charater or Too Many Characters In Field"
+      continue_prompt
+    fi
+  else
+    echo "Staff Surname: No Input Detected, This Field Requires Characters"
+    continue_prompt
+  fi
+done
+
+# == Department
+while :
+do
+  echo -n "Company Department :"
+  read DEPART
+  case $DEPART in
+    ACCOUNTS|Accounts|accounts) break;;
+    SALES|Sales|sales) break;;
+    IT|It|it) break;;
+    CLAIMS|Claims|claims) break;;
+    SERVICES|Services|services) break;;
+    *) echo "Department: Accounts,Sales,IT,Claims,Services";;
+  esac
+done
+return 0
+}
+
+display_rec()
+{
+# display_rec
+# could use cat << here document
+tput cup 5 0
+echo "EMPLOYEE NO: $CODE"
+echo "FIRST NAME : $F_NAME"
+echo "SURNAME    : $S_NAME"
+echo "DEPARTMENT : $DEPART"
+echo -e "\n\n"
+}
+
+no_recs()
+{
+# no_recs
+echo -e "\n\nSorry could not find a record with the name $STR"
+}
+
+get_rec()
+{
+# get_rec
+clear
+echo -n "Enter the employee surname :"
+read STR
+if [ "$STR" = "q" ];then
+  return 1
+fi
+
+REC=0
+MATCH=no
+if [ "$STR" != "" ];then
+  while read CODE F_NAME S_NAME DEPART
+  do
+    REC=`expr $REC + 1`
+    tput cup 3 4
+    echo -n " searching record.. $REC"
+    if [ "$S_NAME" = "$STR" ];then
+      MATCH=yes
+      display_rec
+      break
+    else
+      continue
+    fi
+  done < DBFILE
+else
+  echo "Enter a surname to search for or q to quit"
+fi
+if [ "$MATCH" = "no" -a "$STR" != "" ];then  
+  no_recs
+fi
+}
+
+page_all()
+{
+# page_all
+clear
+echo -e "\nPage all records:"
+echo -e "\t\tSurname\tName\tEmployee Code"
+echo -e "\t\t============================="
+cat $DBFILE | awk -F: '{print "\t\t"$2"\t"$3"\t"$1}' | more
+return 0
+}

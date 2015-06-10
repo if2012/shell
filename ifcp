@@ -1,0 +1,8 @@
+#!/bin/sh
+# ifcp
+if cp myfile myfile.bak >/dev/null 2>&1 
+then
+  echo "good copy"
+else
+  echo "`basename $0`:error could not copy the files" 
+fi

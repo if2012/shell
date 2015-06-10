@@ -1,0 +1,183 @@
+#!/bin/sh
+# backup_run
+
+# script to run the backups
+# loads in a setting file for the user to change
+
+SOURCE=~/appdva/bin/backup.defaults
+check_source()
+{
+# check_source
+# can we load the file
+# backup.defaults is the source file containing config/functions
+# make sure your path includes this directory you are running from
+if [ -r $SOURCE ];then
+  . $SOURCE
+else
+  echo "`basename $0`: cannot locate defaults file"
+  exit 1
+fi
+}
+
+header()
+{
+# header
+USER=`whoami`
+MYDATE=`date +%A" "%e" of "%m-%Y`
+clear
+echo "
+User: $USER                             $MYDATE
+              NETWORK SYSTEM BACKUP
+              ====================="
+}
+
+change_settings()
+{
+# change_settings
+# let the user see the dafault settings..
+header
+echo "Valid Entries Are..."
+echo "Tape Device: rmt0, rmt1, rmt3"
+echo "Mail Admin: yes, no"
+echo "Backup Type: full, normal, sybase"
+while :
+do
+  echo -n -e "\n\n Tape Device To Be Used For This Backup [$_DEVICE] :"
+  read T_DEVICE
+  : ${T_DEVICE:=$_DEVICE}
+  case $T_DEVICE in
+  rmt0|rmt1|rmt3) break;;
+  *) echo "The devices are either ... rmt0, rmt1, rmt3"
+    ;;
+  esac
+done
+
+# if the user hits return on any of the fields, the dafault value will be used
+while :
+do
+  echo -n " Mail Adimin When Done                   [$_INFORM] :"
+  read T_INFORM
+  : ${T_INFORM:=$_INFORM}
+  case $T_INFORM in
+  yes|Yes) break;;
+  no|No) break;;
+  *) echo "The choices are yes, no"
+    ;;
+  esac
+done
+
+while :
+do
+  echo -n " Backup Type                            [$_TYPE] :"
+  read T_TYPE
+  : ${T_TYPE:=$_TYPE}
+  case $T_TYPE in
+  Full|full) break;;
+  Normal|normal) break;;
+  Sybase|sybase) break;;
+  *) echo "The choices are either ... full, normal, sybase"
+  esac
+done
+# re-assign the temp variables back to original variables that
+# were loaded in
+_DEVICE=$T_DEVICE; _INFORM=$T_INFORM; _TYPE=$T_TYPE
+}
+
+show_settings()
+# display current settings 
+{
+echo "
+                   Default Settings Are...
+                Tape Device To Be Used       : $_DEVICE
+                Mail Admin When Done         : $_INFORM
+                Type Of Backup               : $_TYPE
+                Log File Of Backup           : $_LOGFILE"
+}
+get_code()
+{
+# users get 3 attempts at entering the correct code
+# _CODE is loaded in from the source file
+clear
+header
+_COUNTER=1
+echo " YOU MUST ENTER THE CORRECT CODE TO BE ABLE TO CHANGE
+     DEFAULT SETTINGS"
+while :
+do
+  _COUNTER=`expr $_COUNTER + 1`
+  echo -n "Enter the code to change the settings :"
+  read T_CODE
+  # echo $_COUNTER
+  if [ "$T_CODE" = "$_CODE" ];then
+    return 0
+  else
+    if [ "$_COUNTER" -gt 3 ];then
+      echo "Sorry incorrect code entered, you cannot change the settings.."
+      return 1
+    fi
+  fi
+done
+}
+
+check_drive()
+{
+# make sure we can rewind the tape
+mt -f /dev/$_DEVICE rewind > /dev/null 2>&1
+if [ $? -ne 0 ];then
+  return 1
+else 
+  return 0
+fi
+}
+
+#============== main =============
+
+# can we source the file 
+check_source
+header
+# display the loaded in variables
+show_settings
+# ask user if he/she wants to change any settings
+if continue_prompt "Do you wish to change some of the system defaults" "Y";then
+  # yes then enter code name
+  if get_code;then
+    # change some settings
+    change_settings
+    show_settings
+  fi
+fi
+
+#---------- got settings.. now do backup
+if check_drive;then
+  echo "tape OK...."
+else
+  echo "Cannot rewind the tape..Is it in the tape drive ???"
+  echo "Check it out"
+  exit 1
+fi
+
+# file system paths to backup
+case $_TYPE in
+Full|full)
+  BACKUP_PATH="sybase syb/support etc var bin apps use/local"
+  ;;
+Normal|normal)
+  BACKUP_PATH="etc var bin apps usr/local"
+  ;;
+Sybase|sybase)
+  BACKUP_PATH="sybase syb/support"
+  ;;
+esac
+# now for backup
+cd /
+echo "Now starting backup......"
+find $BACKUP_PATH -print | cpio -ovB -0 /dev/$_DEVICE >> $_LOGFILE 2>&1
+
+# if the above cpio does not work on your system try cpio below, instead
+# find $BACKUP_PATH -print | cpio -ovB > /dev/$_DEVICE >> $_LOGFILE 2>&1
+
+# to get more information on the tape change -ovB to -ovcC66536
+
+if [ "$_INFORM" = "yes" ];then
+  echo "Backup finished check the log file" | mail admin
+fi

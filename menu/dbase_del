@@ -1,0 +1,60 @@
+#!/bin/sh
+# dbase_del
+# delete a record
+
+# trap signals
+trap "" 2 3 15
+
+# DATAFILE
+DBFILE=DBFILE
+
+# temp files
+HOLD1=HOLD1.$$
+HOLD2=HOLD2.$$
+
+. func_lib
+
+# main
+
+SAVEDIFS=$IFS
+IFS=:
+set get_rec
+get_rec
+if [ "$MATCH" = "yes" ];then
+  if continue_promptYN "Do You Wish To DELETE This Record" "N";then
+    echo "DEL"
+    grep -v $STR DBFILE >$HOLD1 2> /dev/null
+    if [ $? -ne 0 ];then
+      echo "Problems creating temp file $HOLD1..check it out"
+      exit 1
+    fi
+    mv $HOLD1 DBFILE
+    if [ $? -ne 0 ];then
+      echo "Problems moving temp file..check it out"
+      exit 1
+    fi
+    if [ -f $HOLD1 ];then
+      rm $HOLD1
+    fi
+    # sort the file after changes
+    sort -k 3 -t: $DBFILE >$HOLD2 2> /dev/null
+    if [ $? -ne 0 ];then
+      echo "Problems trying to sort the file..check it out"
+      exit 1
+    fi
+    mv $HOLD2 $DBFILE
+    if [ $? -ne 0 ];then
+      echo "Problems moving the temp sort file..check it out"
+      exit 1
+    fi    
+    if [ -f $HOLD2 ];then
+      rm $HOLD2
+    fi
+  else
+    echo "no deletion"
+    # no deletion
+  fi  # if wish to delete
+fi  # if match
+
+# restore IFS settings
+IFS=$SAVEDIFS

@@ -1,0 +1,21 @@
+#!/bin/sh
+# dbase_print
+# print all records
+
+DBFILE=DBFILE
+
+# main 
+SAVEDIFS=$IFS
+IFS=:
+if [ -f $DBFILE ];then
+  clear
+  echo -e "\nThe all records:"
+  echo -e "\t\tNumber\tName\t\tDepartment"
+  echo -e "\t\t=================================="
+  while read CODE F_NAME S_NAME DEPART
+  do
+    echo -e "\t\t$CODE\t$F_NAME.$S_NAME\t$DEPART"
+  done < DBFILE
+  echo -e "\n\n"
+fi
+IFS=$SAVEDIFS

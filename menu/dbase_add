@@ -1,0 +1,43 @@
+#!/bin/sh
+# dbase_add
+# add a record
+# ignore signals
+trap "" 2 3 15
+# temp hold files
+DBFILE=DBFILE
+HOLD1=HOLD1.$$
+
+. func_lib
+
+#  main
+clear
+echo -e "\t\tADD A EMPLOYEE RECORD"
+if [ -s $DBFILE ]; then :
+else
+  echo "Information: Creating new file to add employee records"
+  >$DBFILE
+fi
+add_rec
+if continue_promptYN "Do You Wish To Save This Record " "Y"; then
+  echo "$NUM:$F_NAME:$S_NAME:$DEPART"  >> $DBFILE
+  echo "record saved"
+
+  sleep 1
+  sort -k 3 -t: $DBFILE >$HOLD1 2> /dev/null
+  if [ $? -ne 0 ];then
+    echo "problems trying to sort the file..check it out"
+    exit 1
+  fi
+  mv $HOLD1 $DBFILE
+  if [ $? -ne 0 ];then
+    echo "problems moving the temp sort file..check it out"
+    exit 1
+  fi  
+  if [ -f $HOLD1 ];then
+    rm $HOLD1
+  fi 
+
+else
+  echo " record not saved"
+  sleep 1 
+fi
